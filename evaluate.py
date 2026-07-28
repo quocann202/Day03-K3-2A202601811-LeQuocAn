@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from chatbot import ask, create_provider
 from src.agent.agent import ReActAgent
-from src.tools.tools import get_default_tools
+from src.tools.tools import get_tools
 
 
 CASES = [
@@ -27,8 +27,8 @@ def run() -> Path:
     provider = create_provider()
     results = []
     for case in CASES:
-        v1 = ReActAgent(provider, get_default_tools(), prompt_version="v1")
-        v2 = ReActAgent(provider, get_default_tools(), prompt_version="v2")
+        v1 = ReActAgent(provider, get_tools("v1"), prompt_version="v1")
+        v2 = ReActAgent(provider, get_tools("v2"), prompt_version="v2")
         record = {"timestamp": datetime.now(timezone.utc).isoformat(), **case}
         for name, run_case in {
             "chatbot": lambda: ask(provider, case["prompt"]),

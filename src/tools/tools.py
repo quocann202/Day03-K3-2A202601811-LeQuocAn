@@ -79,6 +79,30 @@ def calculate_order_total(
     }
 
 
+def get_v1_tools() -> list[dict[str, Any]]:
+    """Return vague v1 tool specs used in the ablation baseline."""
+    return [
+        {
+            "name": "check_stock",
+            "description": "Checks stock for a product.",
+            "function": check_stock,
+            "required_args": ["item_name"],
+        },
+        {
+            "name": "get_discount",
+            "description": "Calculates tax or discount from a coupon code.",
+            "function": get_discount,
+            "required_args": ["coupon_code"],
+        },
+        {
+            "name": "calc_shipping",
+            "description": "Calculates shipping cost.",
+            "function": calc_shipping,
+            "required_args": ["weight_kg", "destination"],
+        },
+    ]
+
+
 def get_default_tools() -> list[dict[str, Any]]:
     """Return the v2 tool specifications supplied to the LLM."""
     return [
@@ -122,3 +146,10 @@ def get_default_tools() -> list[dict[str, Any]]:
             "required_args": ["unit_price_vnd", "quantity", "discount_percent", "shipping_cost_vnd"],
         },
     ]
+
+
+def get_tools(version: str = "v2") -> list[dict[str, Any]]:
+    """Return tool specs for the requested prompt/tool version."""
+    if version == "v1":
+        return get_v1_tools()
+    return get_default_tools()

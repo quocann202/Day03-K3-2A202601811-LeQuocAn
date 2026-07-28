@@ -36,6 +36,15 @@ def test_react_rejects_missing_argument():
     assert "need a weight" in agent.run("Ship it")
 
 
+def test_react_returns_final_answer_when_duplicate_action_blocked():
+    provider = ScriptedProvider([
+        'Thought: Calculate total.\nAction: {"tool":"calculate_order_total","args":{"unit_price_vnd":25000000,"quantity":3,"discount_percent":0,"shipping_cost_vnd":5000}}',
+        'Thought: Repeat the same call.\nAction: {"tool":"calculate_order_total","args":{"unit_price_vnd":25000000,"quantity":3,"discount_percent":0,"shipping_cost_vnd":5000}}\nFinal Answer: The total cost for 3 iPhones is 75,050,000 VND.',
+    ])
+    agent = ReActAgent(provider, get_default_tools())
+    assert "75,050,000 VND" in agent.run("Buy 3 iPhones")
+
+
 def test_react_does_not_accept_final_answer_when_action_is_present():
     provider = ScriptedProvider([
         'Thought: Plan everything.\nAction: {"tool":"check_stock","args":{"item_name":"iPhone"}}\n'
@@ -45,3 +54,12 @@ def test_react_does_not_accept_final_answer_when_action_is_present():
     ])
     agent = ReActAgent(provider, get_default_tools())
     assert agent.run("Check iPhone") == "Stock was checked before giving this answer."
+
+
+def test_react_parses_simple_arithmetic_in_action_json():
+    provider = ScriptedProvider([
+        'Thought: Ship two phones.\nAction: {"tool":"calc_shipping","args":{"weight_kg": (2 * 0.4), "destination": "Hanoi"}}',
+        'Final Answer: Shipping cost is ready.',
+    ])
+    agent = ReActAgent(provider, get_default_tools())
+    assert agent.run("Ship 2 iPhones") == "Shipping cost is ready."

@@ -149,18 +149,17 @@ per turn, then return a numeric VND total after `calculate_order_total`.
 | Group evaluation | **Implemented, not run** | `evaluate.py` exists; no `evaluation_*.jsonl` result is present. |
 | Provider switching | **Partially complete** | OpenAI/Gemini/local providers exist; only Gemini has a verified execution trace. |
 
-## Commands still required before submission
+## Failed Trace
 
-```powershell
-python -m pytest tests\test_agent.py -q
-python tests\test_local.py
-python chatbot.py --message "What is the capital of Vietnam?"
-python run_agent.py --version v2 --message "I want to buy 2 iPhones using code WINNER and ship to Hanoi. What is the total price?"
-python run_agent.py --version v1 --message "Buy 1 iPhone with coupon NOTREAL and ship to Hanoi. What is the total?"
-python run_agent.py --version v2 --message "Buy 1 iPhone with coupon NOTREAL and ship to Hanoi. What is the total?"
-python evaluate.py
-```
+LOG_EVENT: AGENT_STEP ... "step": 4, "llm_output": "... Action: None (since discount can't be applied)\n\nFinal Answer: ..."
+LOG_EVENT: TOOL_OBSERVATION ... "Parser error: expected valid Action JSON or Final Answer."
+LOG_EVENT: AGENT_END ... "status": "success"
 
-After these commands, copy the generated failed and successful trace excerpts
-from `logs/` into this report and `GROUP_REPORT_DRAFT.md`; replace all
-bracketed evaluation metrics with measured values.
+Trace	Source	What to say
+###Failure
+Phi-3 purchase_success or out_of_stock
+Wrong args, multi-action output, ignored stock: 0
+
+###Success
+Gemini purchase_success (earlier in log)
+4 tools → 45,036,000 VND

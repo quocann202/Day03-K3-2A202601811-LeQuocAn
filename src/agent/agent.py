@@ -6,10 +6,7 @@ from src.telemetry.logger import logger
 from src.telemetry.metrics import tracker
 
 class ReActAgent:
-    """
-    SKELETON: A ReAct-style Agent that follows the Thought-Action-Observation loop.
-    Students should implement the core loop logic and tool execution.
-    """
+    """ReAct agent implementing the Thought -> Action -> Observation loop."""
     
     def __init__(self, llm: LLMProvider, tools: List[Dict[str, Any]], max_steps: int = 5, prompt_version: str = "v2"):
         self.llm = llm
@@ -84,11 +81,20 @@ Rules:
                 return final_answer
 
             if action is None:
-                observation = {"ok": False, "error": "Parser error: expected Action JSON or Final Answer."}
+                observation = {
+                    "ok": False,
+                    "error": "Parser error: expected valid Action JSON or Final Answer.",
+                }
             else:
                 tool_name, arguments = action
                 action_key = (tool_name, json.dumps(arguments, sort_keys=True, ensure_ascii=False))
                 if action_key in seen_actions:
+                    if final_answer is not None:
+                        logger.log_event(
+                            "AGENT_END",
+                            {"steps": steps + 1, "status": "success", "note": "duplicate_action_with_final_answer"},
+                        )
+                        return final_answer
                     observation = {"ok": False, "error": "Repeated identical action blocked."}
                 else:
                     seen_actions.add(action_key)
@@ -122,7 +128,7 @@ Rules:
         if raw_json is None:
             return None
         try:
-            payload = json.loads(raw_json)
+            payload = json.loads(ReActAgent._sanitize_action_json(raw_json))
         except (TypeError, json.JSONDecodeError):
             return None
         tool = payload.get("tool")
@@ -130,6 +136,20 @@ Rules:
         if not isinstance(tool, str) or not isinstance(args, dict):
             return None
         return tool, args
+
+    @staticmethod
+    def _sanitize_action_json(raw_json: str) -> str:
+        """Replace simple parenthesized arithmetic literals so local models can parse."""
+        def replace(match: re.Match[str]) -> str:
+            expression = match.group(1)
+            if not re.fullmatch(r"[\d.+\-*/\s]+", expression):
+                return match.group(0)
+            try:
+                return str(eval(expression, {"__builtins__": {}}, {}))
+            except (SyntaxError, TypeError, ZeroDivisionError):
+                return match.group(0)
+
+        return re.sub(r"\(\s*([\d.+\-*/\s]+)\s*\)", replace, raw_json)
 
     @staticmethod
     def _first_json_object(text: str) -> Optional[str]:
